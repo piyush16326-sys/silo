@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AI Workspace</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-autoloader.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(180.5968094512292deg, #E6E6FA 0%, #f6c729 100%);
+            color: #e3e3e3;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px 0;
+            color: #042b5c;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-btn {
+            background: #042b5c;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* RESPONSE AREA */
+        .response-area {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: azure;
+            border-radius: 16px;
+            border: 1px solid #3c4043;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-bubble {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #d1e7dd;
+            color: #0f5132;
+            padding: 10px 15px;
+            border-radius: 14px 14px 0 14px;
+            max-width: 80%;
+            font-size: 15px;
+            margin-left: auto;
+        }
+
+        .assistant-message {
+            align-self: flex-start;
+            width: 100%;
+        }
+
+        .output-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #042b5c; 
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .response-text {
+            font-size: 16px;
+            line-height: 1.6;
+            word-break: break-word;
+            font-family: inherit;
+            color: #042b5c;
+        }
+
+        /* Fix: Prevent raw HTML output strings from rendering as live browser objects */
+        .response-text xmp, .response-text script, .response-text plaintext {
+            display: block;
+        }
+
+        .response-text code {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #2d2d30;
+            padding: 3px 6px;
+            border-radius: 4px;
+            color: #f2a154;
+        }
+
+        /* CODE CONTAINER STYLING */
+        .code-container {
+            position: relative;
+            margin: 15px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #2d2d30;
+            border: 1px solid #3c4043;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #202123;
+            padding: 8px 16px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #d1d5db;
+            border-bottom: 1px solid #3c4043;
+        }
+
+        .copy-btn {
+            background: transparent;
+            color: #b3b3b3;
+            border: none;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .copy-btn:hover { background-color: #343541; color: #ffffff; }
+        .copy-btn svg { width: 14px; height: 14px; fill: currentColor; }
+        pre[class*="language-"] { margin: 0 !important; padding: 15px !important; background: #1e1e1e !important; font-size: 14px !important; }
+
+        /* INPUT AREA */
+        .input-area {
+            position: relative;
+            background: azure;
+            border: 1px solid #3c4043;
+            border-radius: 28px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-area:focus-within {
+            border-color: #d1540c;
+            box-shadow: 0 0 0 1px #f1db12;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: black;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+            height: 44px;
+            padding-top: 10px;
+            padding-left: 10px;
+            line-height: 24px;
+        }
+
+        #submitBtn {
+            background-color: #a8c7fa;
+            color: #042b5c;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #submitBtn:hover { background-color: #c2e7ff; }
+        #submitBtn:disabled { background-color: #3c4043; color: #80868b; cursor: not-allowed; }
+        .status-error { color: #f28b82 !important; }
+        .response-area::-webkit-scrollbar { width: 8px; }
+        .response-area::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <header>
+            <span>Silo Workspace</span>
+            <button class="clear-btn" onclick="clearChat()">Clear Chat</button>
+        </header>
+
+        <div class="response-area" id="chatFeed">
+            <div class="chat-bubble assistant-message">
+                <div class="output-label">AI Assistant</div>
+                <div class="response-text" id="initialWelcome">Ready. Ask me to make a website structural framework!</div>
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <textarea id="prompt" placeholder="Ask anything..." rows="1" onkeydown="handleKeyPress(event)"></textarea>
+            <button id="submitBtn" onclick="askAI()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+<script>
+    // 🌐 PASTE YOUR TRYCLOUDFLARE PUBLIC TUNNEL URL HERE EXACTLY AS IT PRINTS IN COLAB
+    const OLLAMA_TUNNEL_URL = "https://increasingly-exist-images-lit.trycloudflare.com/api/chat"; 
+    
+    // Set to your downloaded larger model profile
+    const MODEL_NAME = "qwen2.5-coder:3b";
+
+    // Load history from local storage on startup
+    let chatHistory = JSON.parse(localStorage.getItem('ollama_chat_history')) || [];
+
+    window.onload = function() {
+        if (chatHistory.length > 0) {
+            const chatFeed = document.getElementById('chatFeed');
+            const welcomeMsg = document.getElementById('initialWelcome');
+            if(welcomeMsg) welcomeMsg.parentElement.remove();
+
+            chatHistory.forEach(msg => {
+                const bubble = document.createElement('div');
+                if (msg.role === 'user') {
+                    const displayContent = msg.content.replace("Look closely at the tags (like header, nav, body, section) you used in the previous message. Do not make up new classes. ", "");
+                    bubble.className = 'user-message';
+                    bubble.innerText = displayContent;
+                } else {
+                    bubble.className = 'chat-bubble assistant-message';
+                    bubble.innerHTML = `<div class="output-label">Qwen Coder</div><div class="response-text">${marked.parse(msg.content)}</div>`;
+                    buildCodeBlocks(bubble.querySelector('.response-text'));
+                }
+                chatFeed.appendChild(bubble);
+            });
+            Prism.highlightAllUnder(chatFeed);
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+    };
+
+    function handleKeyPress(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            askAI();
+        }
+    }
+
+    function clearChat() {
+        chatHistory = [];
+        localStorage.removeItem('ollama_chat_history');
+        document.getElementById('chatFeed').innerHTML = `
+            <div class="chat-bubble assistant-message">
+                <div class="output-label">AI Assistant</div>
+                <div class="response-text">Chat history wiped clean from local disk memory.</div>
+            </div>
+        `;
+    }
+
+    function copyToClipboard(button, text) {
+        navigator.clipboard.writeText(atob(text)).then(() => {
+            const originalText = button.innerHTML;
+            button.innerHTML = `<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Copied!`;
+            setTimeout(() => { button.innerHTML = originalText; }, 2000);
+        });
+    }
+
+    function buildCodeBlocks(container) {
+        container.querySelectorAll('pre').forEach((preBlock) => {
+            if (preBlock.parentElement.classList.contains('code-container')) return;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-container';
+            const codeElement = preBlock.querySelector('code');
+            let lang = 'code';
+            if (codeElement) {
+                const langClass = Array.from(codeElement.classList).find(c => c.startsWith('language-'));
+                if (langClass) lang = langClass.replace('language-', '');
+            }
+            const rawCodeBase64 = btoa(unescape(encodeURIComponent(preBlock.innerText.trim())));
+            const header = document.createElement('div');
+            header.className = 'code-header';
+            header.innerHTML = `<span>${lang}</span><button class="copy-btn" onclick="copyToClipboard(this, '${rawCodeBase64}')"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> Copy code</button>`;
+            preBlock.parentNode.insertBefore(wrapper, preBlock);
+            wrapper.appendChild(header);
+            wrapper.appendChild(preBlock);
+        });
+    }
+
+    async function askAI() {
+        const promptInput = document.getElementById('prompt');
+        const chatFeed = document.getElementById('chatFeed');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        let promptText = promptInput.value.trim();
+        if (!promptText) return;
+
+        const welcomeMsg = document.getElementById('initialWelcome');
+        if(welcomeMsg) welcomeMsg.parentElement.remove();
+
+        const userBubble = document.createElement('div');
+        userBubble.className = 'user-message';
+        userBubble.innerText = promptText;
+        chatFeed.appendChild(userBubble);
+        
+        let promptToSend = promptText;
+        if (chatHistory.length > 0 && (promptText.toLowerCase().includes('css') || promptText.toLowerCase().includes('style'))) {
+            promptToSend = "Look closely at the tags (like header, nav, body, section) you used in the previous message. Do not make up new classes. " + promptText;
+        }
+
+        chatHistory.push({ role: 'user', content: promptToSend });
+        localStorage.setItem('ollama_chat_history', JSON.stringify(chatHistory));
+
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'chat-bubble assistant-message';
+        aiBubble.innerHTML = `<div class="output-label">Silo</div><div class="response-text">Thinking...</div>`;
+        chatFeed.appendChild(aiBubble);
+        chatFeed.scrollTop = chatFeed.scrollHeight;
+
+        const responseTextDiv = aiBubble.querySelector('.response-text');
+        submitBtn.disabled = true;
+        promptInput.value = "";
+
+        let accumulatedMarkdown = "";
+
+        try {
+            // Fetch directly using the clean target URL configuration
+            const response = await fetch(OLLAMA_TUNNEL_URL, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: MODEL_NAME,
+                    messages: chatHistory,
+                    stream: true,
+                    options: {
+                        temperature: 0.7,
+                        repetition_penalty: 1.2,
+                        presence_penalty: 0.8
+                    }
+                })
+            });
+
+            if (!response.ok) throw new Error("Server communication breakdown.");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            responseTextDiv.innerText = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.trim() !== "") {
+                        try {
+                            const parsed = JSON.parse(line);
+                            if (parsed.message && parsed.message.content) {
+                                accumulatedMarkdown += parsed.message.content;
+                                responseTextDiv.innerHTML = marked.parse(accumulatedMarkdown);
+                                Prism.highlightAllUnder(responseTextDiv);
+                                chatFeed.scrollTop = chatFeed.scrollHeight;
+                            }
+                        } catch(e) {
+                            // Suppress partial fragment tracking errors smoothly
+                        }
+                    }
+                }
+            }
+
+            buildCodeBlocks(responseTextDiv);
+            chatHistory.push({ role: 'assistant', content: accumulatedMarkdown });
+            localStorage.setItem('ollama_chat_history', JSON.stringify(chatHistory));
+
+        } catch (error) {
+            responseTextDiv.classList.add('status-error');
+            responseTextDiv.innerText = "Error communicating with the Google Colab server tunnel.";
+            console.error(error);
+        } finally {
+            submitBtn.disabled = false;
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+    }
+</script>
+</body>
+</html>
